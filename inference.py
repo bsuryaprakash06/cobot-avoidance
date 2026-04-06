@@ -159,6 +159,30 @@ def _fallback_action(state: dict) -> dict:
     trajectories = [t for t in state.get("incoming_trajectories", []) if t.get("active", True)]
     obstacle = state["obstacle"]
 
+    # --- Predictive dodge: obstacle is broadcasting, move out of path NOW ---
+    if obstacle.get("is_broadcasting") and obstacle.get("next_trajectory_angle") is not None:
+        angle = obstacle["next_trajectory_angle"]
+        dx_b = math.cos(math.radians(angle))
+        dy_b = math.sin(math.radians(angle))
+
+        def broadcast_clear(delta):
+            rad = math.radians(cobot["angle"] + delta)
+            tx = cobot["x"] + 3.0 * math.cos(rad)
+            ty = cobot["y"] + 3.0 * math.sin(rad)
+            mag = math.hypot(dx_b, dy_b) or 1e-9
+            ux, uy = dx_b / mag, dy_b / mag
+            proj = (tx - obstacle["x"]) * ux + (ty - obstacle["y"]) * uy
+            if proj < 0:
+                return math.hypot(tx - obstacle["x"], ty - obstacle["y"])
+            return math.hypot(tx - (obstacle["x"] + proj * ux), ty - (obstacle["y"] + proj * uy))
+
+        current_clear = broadcast_clear(0)
+        if current_clear < 2.0:  # too close to broadcasted path — move away
+            cw = broadcast_clear(15.0)
+            ccw = broadcast_clear(-15.0)
+            delta = 15.0 if cw > ccw else -15.0
+            return {"delta_angle": delta, "send_halt": False}
+
     if not trajectories:
         # Aim toward obstacle and halt
         dx = obstacle["x"] - cobot["x"]

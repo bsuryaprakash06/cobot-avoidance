@@ -1,3 +1,12 @@
+---
+title: Industrial Robot Arm Collision Avoidance
+emoji: 🤖
+colorFrom: blue
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 # Industrial Robot Arm Collision Avoidance
 
 An OpenEnv-compliant reinforcement learning environment that simulates **collaborative robot arm (cobot) safety planning** on a shared factory floor.

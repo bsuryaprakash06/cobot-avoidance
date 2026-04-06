@@ -24,10 +24,12 @@ import time
 
 import requests
 from openai import OpenAI
+from dotenv import load_dotenv
 
 # Ensure project root is on path when run directly
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+load_dotenv()
 
 # ------------------------------------------------------------------ #
 #  Configuration

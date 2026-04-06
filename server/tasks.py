@@ -94,7 +94,7 @@ def run_task_2(policy_fn=None, seed: int = 42) -> TaskResult:
             angle = state.obstacle.next_trajectory_angle
             dx, dy = math.cos(math.radians(angle)), math.sin(math.radians(angle))
             if ray_distance(state.cobot.tip_x, state.cobot.tip_y,
-                            state.obstacle.x, state.obstacle.y, dx, dy) > 1.5:
+                            state.obstacle.x, state.obstacle.y, dx, dy) > 0.3:
                 pre_clears += 1
 
         action = _to_action(policy_fn(state.model_dump()) if policy_fn else _policy_replan(state))
@@ -163,30 +163,74 @@ def run_task_3(policy_fn=None, seed: int = 42) -> TaskResult:
 # ------------------------------------------------------------------ #
 
 def _policy_replan(state) -> ActionInput:
+    cobot = state.cobot
+    obstacle = state.obstacle
     trajectories = [t for t in state.incoming_trajectories if t.active]
-    if not trajectories:
-        return ActionInput(delta_angle=0.0, send_halt=False)
-    worst = min(trajectories, key=lambda t: ray_distance(
-        state.cobot.tip_x, state.cobot.tip_y, t.x, t.y, t.vx, t.vy))
-    if ray_distance(state.cobot.tip_x, state.cobot.tip_y,
-                    worst.x, worst.y, worst.vx, worst.vy) > 3.0:
-        return ActionInput(delta_angle=0.0, send_halt=False)
-    cw  = _tip_clear(state.cobot, state.cobot.angle + 10, worst)
-    ccw = _tip_clear(state.cobot, state.cobot.angle - 10, worst)
-    return ActionInput(delta_angle=10.0 if cw > ccw else -10.0, send_halt=False)
+
+    # --- Check broadcast threat (preemptive) ---
+    if obstacle.is_broadcasting and obstacle.next_trajectory_angle is not None:
+        angle = obstacle.next_trajectory_angle
+        dx_b = math.cos(math.radians(angle))
+        dy_b = math.sin(math.radians(angle))
+        d = ray_distance(cobot.tip_x, cobot.tip_y, obstacle.x, obstacle.y, dx_b, dy_b)
+        if d < 1.0:
+            cw  = _tip_clear_broadcast(cobot, cobot.angle + 15, obstacle, angle)
+            ccw = _tip_clear_broadcast(cobot, cobot.angle - 15, obstacle, angle)
+            delta = 15.0 if cw > ccw else -15.0
+            return ActionInput(delta_angle=delta, send_halt=False)
+
+    # --- Check active trajectory threats ---
+    if trajectories:
+        worst = min(trajectories, key=lambda t: ray_distance(
+            cobot.tip_x, cobot.tip_y, t.x, t.y, t.vx, t.vy))
+        d = ray_distance(cobot.tip_x, cobot.tip_y, worst.x, worst.y, worst.vx, worst.vy)
+        if d < 1.5:
+            cw  = _tip_clear(cobot, cobot.angle + 15, worst)
+            ccw = _tip_clear(cobot, cobot.angle - 15, worst)
+            delta = 15.0 if cw > ccw else -15.0
+            return ActionInput(delta_angle=delta, send_halt=False)
+
+    return ActionInput(delta_angle=0.0, send_halt=False)
 
 
 def _policy_replan_and_halt(state) -> ActionInput:
-    replan = _policy_replan(state)
-    dx = state.obstacle.x - state.cobot.x
-    dy = state.obstacle.y - state.cobot.y
-    target = math.degrees(math.atan2(dy, dx))
-    diff = (target - state.cobot.angle + 180) % 360 - 180
-    aim = max(-15.0, min(15.0, diff * 0.5))
+    cobot = state.cobot
+    obstacle = state.obstacle
+
+    # Angle needed to aim tip at obstacle
+    dx = obstacle.x - cobot.x
+    dy = obstacle.y - cobot.y
+    target = math.degrees(math.atan2(dy, dx))  # = 0.0 degrees
+    diff = (target - cobot.angle + 180) % 360 - 180
+    # Always rotate toward obstacle (max 15 deg/step)
+    aim = max(-15.0, min(15.0, diff))
+
     trajectories = [t for t in state.incoming_trajectories if t.active]
-    if not trajectories:
-        return ActionInput(delta_angle=aim, send_halt=abs(diff) < 10.0)
-    return ActionInput(delta_angle=replan.delta_angle, send_halt=abs(diff) < 15.0)
+
+    # Check if under immediate threat
+    immediate_threat = False
+    if obstacle.is_broadcasting and obstacle.next_trajectory_angle is not None:
+        angle = obstacle.next_trajectory_angle
+        dx_b = math.cos(math.radians(angle))
+        dy_b = math.sin(math.radians(angle))
+        d = ray_distance(cobot.tip_x, cobot.tip_y, obstacle.x, obstacle.y, dx_b, dy_b)
+        if d < 2.0:
+            immediate_threat = True
+
+    if trajectories:
+        worst = min(trajectories, key=lambda t: ray_distance(
+            cobot.tip_x, cobot.tip_y, t.x, t.y, t.vx, t.vy))
+        d = ray_distance(cobot.tip_x, cobot.tip_y, worst.x, worst.y, worst.vx, worst.vy)
+        if d < 2.0:
+            immediate_threat = True
+
+    if immediate_threat:
+        replan = _policy_replan(state)
+        # Still halt if roughly aimed (within 20 deg)
+        return ActionInput(delta_angle=replan.delta_angle, send_halt=abs(diff) < 20.0)
+    else:
+        # Freely aim at obstacle — halt when within 15 deg
+        return ActionInput(delta_angle=aim, send_halt=abs(diff) < 15.0)
 
 
 def _tip_clear(cobot, angle_deg, traj) -> float:
@@ -194,6 +238,15 @@ def _tip_clear(cobot, angle_deg, traj) -> float:
     tx = cobot.x + 3.0 * math.cos(rad)
     ty = cobot.y + 3.0 * math.sin(rad)
     return ray_distance(tx, ty, traj.x, traj.y, traj.vx, traj.vy)
+
+
+def _tip_clear_broadcast(cobot, angle_deg, obstacle, broadcast_angle) -> float:
+    rad = math.radians(angle_deg)
+    tx = cobot.x + 3.0 * math.cos(rad)
+    ty = cobot.y + 3.0 * math.sin(rad)
+    dx = math.cos(math.radians(broadcast_angle))
+    dy = math.sin(math.radians(broadcast_angle))
+    return ray_distance(tx, ty, obstacle.x, obstacle.y, dx, dy)
 
 
 def _to_action(v) -> ActionInput:

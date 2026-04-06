@@ -1,0 +1,164 @@
+name: industrial_robot_arm_collision_avoidance
+version: "1.0.0"
+description: >
+  A collaborative robot arm (cobot) operates on a shared factory floor alongside
+  a moving obstacle arm. The cobot's controller must read the obstacle's broadcasted
+  trajectory (ISO 10218 safety broadcast window), replan its end-effector path to
+  avoid collision zones BEFORE the obstacle trajectory is launched, and dispatch
+  halt signals to stop the obstacle arm when operationally safe.
+  Simulates real cobot safety planning per ISO 10218 / ISO 15066 speed-and-separation
+  monitoring, as used in automotive and electronics manufacturing shared cells.
+
+authors:
+  - name: "Team Codlerz"
+
+tags:
+  - robotics
+  - cobot-safety
+  - collision-avoidance
+  - path-planning
+  - manufacturing
+  - real-world
+
+interface:
+  reset:
+    method: POST
+    path: /reset
+    query_params:
+      - name: seed
+        type: integer
+        required: false
+    response: ResetResult
+
+  step:
+    method: POST
+    path: /step
+    body: ActionInput
+    response: StepResult
+
+  state:
+    method: GET
+    path: /state
+    response: EnvironmentState
+
+observation_space:
+  type: object
+  fields:
+    cobot:
+      type: object
+      fields:
+        angle: {type: float, min: 0, max: 360, description: "End-effector joint angle (degrees)"}
+        tip_x: {type: float, description: "End-effector X position (metres)"}
+        tip_y: {type: float, description: "End-effector Y position (metres)"}
+        integrity: {type: integer, min: 0, max: 3, description: "Structural integrity points"}
+        halt_signals_sent: {type: integer}
+        halt_signals_effective: {type: integer}
+    obstacle:
+      type: object
+      fields:
+        x: {type: float}
+        y: {type: float}
+        integrity: {type: integer, min: 0, max: 3}
+        is_broadcasting: {type: boolean, description: "True during ISO 10218 broadcast window"}
+        next_trajectory_angle: {type: float, nullable: true, description: "Broadcasted trajectory angle (degrees)"}
+        charge_remaining: {type: integer, description: "Steps until trajectory launches"}
+        steps_until_launch: {type: integer}
+    incoming_trajectories:
+      type: array
+      description: "Active obstacle arm trajectories entering the shared workspace"
+      items:
+        x: float
+        y: float
+        vx: float
+        vy: float
+        active: boolean
+    halt_signals:
+      type: array
+      description: "Active halt signals dispatched by the cobot"
+      items:
+        x: float
+        y: float
+        vx: float
+        vy: float
+
+action_space:
+  type: object
+  fields:
+    delta_angle:
+      type: float
+      min: -15.0
+      max: 15.0
+      description: "Replan end-effector angle by this many degrees this step"
+    send_halt:
+      type: boolean
+      description: "Dispatch a halt signal toward the obstacle arm in the current end-effector direction"
+
+reward:
+  description: >
+    +0.3 per active obstacle trajectory whose path clears the end-effector by > 1.5 m.
+    +2.0 when a halt signal successfully reaches the obstacle arm.
+    +3.0 bonus when obstacle arm is fully halted (0 integrity).
+    -1.0 when an obstacle trajectory hits the end-effector.
+    -2.0 when cobot integrity reaches 0 (shutdown).
+  range: [-5.0, 6.0]
+  partial_credit: true
+
+tasks:
+  - id: task_1_zero_collision
+    name: "Zero-Collision Operation"
+    difficulty: easy
+    max_steps: 100
+    score_range: [0.0, 1.0]
+    description: >
+      Operate the cobot for the full episode without any end-effector collision.
+      Score = (integrity_remaining / 3) × (steps_survived / 100).
+      Reflects ISO 10218 requirement: zero unplanned contacts in shared cells.
+
+  - id: task_2_predictive_replan
+    name: "Predictive Path Replanning"
+    difficulty: medium
+    max_steps: 100
+    score_range: [0.0, 1.0]
+    description: >
+      Survive AND demonstrate predictive replanning: clear the end-effector from
+      the broadcasted trajectory zone BEFORE the obstacle launches.
+      Score = 50% integrity + 50% pre-launch clearance rate.
+      Models ISO 15066 speed-and-separation monitoring.
+
+  - id: task_3_halt_dispatch
+    name: "Collision-Free Halt Dispatch"
+    difficulty: hard
+    max_steps: 100
+    score_range: [0.0, 1.0]
+    description: >
+      Avoid all collisions AND reduce obstacle arm to 0 operational cycles via
+      halt signals. Score = 40% integrity + 60% obstacle damage fraction.
+      +0.1 bonus for halting obstacle before step 80.
+      Models industrial E-stop coordination between cobots.
+
+environment:
+  field_width_m: 20.0
+  field_height_m: 20.0
+  max_steps: 100
+  cobot_integrity: 3
+  obstacle_integrity: 3
+  trajectory_speed: 1.5
+  halt_signal_speed: 2.0
+  obstacle_launch_interval_steps: 8
+  broadcast_window_steps: 3
+
+docker:
+  image: industrial-robot-arm-collision-avoidance
+  port: 7860
+  health_check: GET /health
+
+variables:
+  - name: API_BASE_URL
+    description: "API endpoint for the LLM"
+    required: true
+  - name: MODEL_NAME
+    description: "Model identifier for inference"
+    required: true
+  - name: HF_TOKEN
+    description: "Hugging Face / API key"
+    required: true

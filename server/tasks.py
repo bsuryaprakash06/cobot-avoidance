@@ -219,4 +219,4 @@ def _tip_clear(cobot, angle_deg, traj) -> float:
 def _to_action(v) -> ActionInput:
     if isinstance(v, ActionInput):
         return v
-    return ActionInput(**v)1
+    return ActionInput(**v)

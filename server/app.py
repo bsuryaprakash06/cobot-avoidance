@@ -153,6 +153,17 @@ def root():
     }
 
 
-if __name__ == "__main__":
+def main():
+    """Start the ASGI server.
+
+    This function is provided so the project can expose a callable entrypoint
+    (e.g. for packaging or multi-mode deployment).
+    """
     import uvicorn
+    # Use the configured app directly. In deployment the host/port may be
+    # overridden by the environment or the process manager.
     uvicorn.run(app, host="0.0.0.0", port=7860)
+
+
+if __name__ == "__main__":
+    main()

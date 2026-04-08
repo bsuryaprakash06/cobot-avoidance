@@ -112,7 +112,7 @@ def render(state, reward, events, step, total_reward):
     place(tip_x, tip_y, "E", ANSI_GREEN + ANSI_BOLD)
 
     # ---- Print ----
-    os.system("clear")
+    os.system("cls" if os.name == "nt" else "clear")
 
     # Top border
     print(ANSI_DIM + "┌" + "─" * (FIELD_W * 2 + 1) + "┐" + ANSI_RESET)

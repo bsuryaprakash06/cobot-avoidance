@@ -30,6 +30,7 @@ from dotenv import load_dotenv
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
+ENABLE_SUMMARY = os.environ.get("ENABLE_SUMMARY", "0") == "1"
 
 # ------------------------------------------------------------------ #
 #  Configuration
@@ -101,6 +102,7 @@ OUTPUT: Return ONLY a JSON object — no explanation, no markdown:
 {"delta_angle": <float between -15.0 and 15.0>, "send_halt": <true or false>}"""
 
 
+
 def _state_summary(state: dict) -> str:
     cobot = state["cobot"]
     obstacle = state["obstacle"]
@@ -134,7 +136,7 @@ def get_llm_action(state: dict, retries: int = 2) -> dict:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": f"Current state:\n{prompt}\n\nOutput action JSON:"},
                 ],
-                temperature=0.2,
+                temperature=0.0,
                 max_tokens=64,
             )
             raw = resp.choices[0].message.content.strip()
@@ -227,8 +229,8 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
     reset_data = env_reset(seed=seed + episode)
     state = reset_data["state"]
 
-    print(json.dumps({
-        "tag": "[START]",
+    # Emit structured log line prefixed with [START] followed by the JSON payload
+    print('[START] ' + json.dumps({
         "task_id": task_id,
         "episode": episode,
         "episode_id": reset_data["episode_id"],
@@ -247,14 +249,13 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
         done = result["done"]
         steps = step_num
 
-        print(json.dumps({
-            "tag": "[STEP]",
+        # Emit structured log line prefixed with [STEP] followed by the JSON payload
+        print('[STEP] ' + json.dumps({
             "step": step_num,
             "action": action,
             "reward": round(reward, 4),
-            "total_reward": round(total_reward, 4),
-            "done": done,
-            "events": result.get("info", {}).get("events", []),
+            "total_reward": round(total_reward, 4), 
+            "done": done
         }), flush=True)
 
         if done:
@@ -275,24 +276,23 @@ def main():
         ep = run_episode(task_id=task_id, episode=i, seed=42 + i)
         grade = env_run_task(task_id, seed=42 + i)
 
-        print(json.dumps({
-            "tag": "[END]",
+        print('[END] ' + json.dumps({
             "task_id": task_id,
             "score": grade["score"],
             "total_reward": ep["total_reward"],
             "steps": ep["steps"],
-            "success": grade["success"],
-            "details": grade.get("details", {}),
+            "success": grade["success"]
         }), flush=True)
 
         all_scores.append(grade["score"])
 
     mean_score = round(sum(all_scores) / len(all_scores), 4)
-    print(json.dumps({
-        "tag": "[SUMMARY]",
-        "mean_score": mean_score,
-        "task_scores": dict(zip(task_ids, all_scores)),
-    }), flush=True)
+
+    if ENABLE_SUMMARY:
+        print('[SUMMARY] ' + json.dumps({
+            "mean_score": mean_score,
+            "task_scores": dict(zip(task_ids, all_scores))
+        }), flush=True)
 
 
 if __name__ == "__main__":

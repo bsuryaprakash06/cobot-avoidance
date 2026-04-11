@@ -25,7 +25,7 @@ TASKS: list[TaskInfo] = [
         ),
         difficulty="easy",
         max_steps=100,
-        reward_range=[0.0, 1.0],
+        reward_range=[0.1, 0.9],
     ),
     TaskInfo(
         task_id="task_2_predictive_replan",
@@ -38,7 +38,7 @@ TASKS: list[TaskInfo] = [
         ),
         difficulty="medium",
         max_steps=100,
-        reward_range=[0.0, 1.0],
+        reward_range=[0.1, 0.9],
     ),
     TaskInfo(
         task_id="task_3_halt_dispatch",
@@ -51,7 +51,7 @@ TASKS: list[TaskInfo] = [
         ),
         difficulty="hard",
         max_steps=100,
-        reward_range=[0.0, 1.0],
+        reward_range=[0.1, 0.9],
     ),
 ]
 

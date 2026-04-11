@@ -73,7 +73,7 @@ def run_task_1(policy_fn=None, seed: int = 42) -> TaskResult:
     score = round(max(0.0, state.cobot.integrity / 3.0) * (steps / 100.0), 4)
     return TaskResult(
         task_id="task_1_zero_collision",
-        score=min(1.0, score),
+        score=max(0.0001, min(0.9999, score)),
         reward=state.total_reward,
         steps_taken=steps,
         success=collisions == 0,
@@ -108,7 +108,7 @@ def run_task_2(policy_fn=None, seed: int = 42) -> TaskResult:
     score = round(0.5 * max(0.0, state.cobot.integrity / 3.0) + 0.5 * preplan_rate, 4)
     return TaskResult(
         task_id="task_2_predictive_replan",
-        score=min(1.0, score),
+        score=max(0.0001, min(0.9999, score)),
         reward=state.total_reward,
         steps_taken=steps,
         success=collisions == 0 and preplan_rate >= 0.8,
@@ -142,7 +142,7 @@ def run_task_3(policy_fn=None, seed: int = 42) -> TaskResult:
 
     return TaskResult(
         task_id="task_3_halt_dispatch",
-        score=min(1.0, score),
+        score=max(0.0001, min(0.9999, score)),
         reward=state.total_reward,
         steps_taken=steps,
         success=state.obstacle.integrity <= 0 and collisions == 0,

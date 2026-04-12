@@ -7,6 +7,8 @@ RUN pip install --no-cache-dir -r server/requirements.txt
 
 COPY models.py .
 COPY server/ ./server/
+COPY graders.py .          
+COPY openenv.yaml .        
 
 EXPOSE 7860
 

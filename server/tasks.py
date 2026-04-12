@@ -12,6 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import ActionInput, TaskInfo, TaskResult
 from server.robot_arm_environment import CollisionAvoidanceEnv, ray_distance
+from graders.easy import EasyGrader
+from graders.medium import MediumGrader
+from graders.hard import HardGrader
 
 
 TASKS: list[TaskInfo] = [
@@ -70,10 +73,11 @@ def run_task_1(policy_fn=None, seed: int = 42) -> TaskResult:
             break
 
     collisions = 3 - state.cobot.integrity
-    score = round(max(0.0, state.cobot.integrity / 3.0) * (steps / 100.0), 4)
+    grader = EasyGrader()
+    score = grader.grade(env)
     return TaskResult(
         task_id="task_1_zero_collision",
-        score=max(0.1, min(0.9, round(score, 1))),
+        score=score,
         reward=state.total_reward,
         steps_taken=steps,
         success=collisions == 0,
@@ -106,10 +110,11 @@ def run_task_2(policy_fn=None, seed: int = 42) -> TaskResult:
 
     collisions = 3 - state.cobot.integrity
     preplan_rate = 0.8
-    score = round(0.5 * max(0.0, state.cobot.integrity / 3.0) + 0.5 * preplan_rate, 4)
+    grader = MediumGrader()
+    score = grader.grade(env)
     return TaskResult(
         task_id="task_2_predictive_replan",
-        score=max(0.1, min(0.9, round(score, 1))),
+        score=score,
         reward=state.total_reward,
         steps_taken=steps,
         success=collisions == 0 and preplan_rate >= 0.8,
@@ -137,13 +142,12 @@ def run_task_3(policy_fn=None, seed: int = 42) -> TaskResult:
 
     collisions = 3 - state.cobot.integrity
     damage = 3 - state.obstacle.integrity
-    score = round(0.4 * max(0.0, state.cobot.integrity / 3.0) + 0.6 * (damage / 3.0), 4)
-    if state.obstacle.integrity <= 0 and steps < 80:
-        score = min(1.0, score + 0.1)
+    grader = HardGrader()
+    score = grader.grade(env)
 
     return TaskResult(
         task_id="task_3_halt_dispatch",
-        score=max(0.1, min(0.9, round(score, 1))),
+        score=score,
         reward=state.total_reward,
         steps_taken=steps,
         success=state.obstacle.integrity <= 0 and collisions == 0,

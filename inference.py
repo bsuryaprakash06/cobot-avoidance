@@ -40,7 +40,7 @@ FAST_MODE = os.environ.get("FAST_MODE", "0") == "1"
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME   = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 API_KEY      = os.environ.get("API_KEY", os.environ.get("HF_TOKEN", ""))
-ENV_BASE_URL = "http://127.0.0.1:7860"
+ENV_BASE_URL = os.environ.get("ENV_BASE_URL", "http://localhost:7860")
 
 client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
 
@@ -282,7 +282,10 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
         return {"steps": 0, "total_reward": 0.0}
 
     # Emit structured log line prefixed with [START] followed by the JSON payload
-    print(f"[START] task={task_id} env=cobot-avoidance model={MODEL_NAME}", flush=True)
+    print('[START] ' + json.dumps({
+        "task_id": task_id,
+        "episode": episode,
+    }), flush=True)
 
     total_reward = 0.0
     steps = 0
@@ -306,7 +309,13 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
         # Emit structured log line prefixed with [STEP]
         action_str = json.dumps(action, separators=(',', ':'))
         is_done = str(done).lower()
-        print(f"[STEP] step={step_num} action={action_str} reward={reward:.2f} done={is_done} error=null", flush=True)
+        print('[STEP] ' + json.dumps({
+    "step": step_num,
+    "action": action,
+    "reward": round(reward, 4),
+    "total_reward": round(total_reward, 4),
+    "done": done
+}), flush=True)
 
         if done:
             break
@@ -359,7 +368,13 @@ def main():
         steps_val = ep.get("steps", 0)
         rewards_arr = ep.get("rewards", [])
         rewards_str = ",".join(f"{r:.2f}" for r in rewards_arr)
-        print(f"[END] success={is_success} steps={steps_val} score={score:.3f} rewards={rewards_str} → Avg score '{task_id}': {score:.4f}", flush=True)
+        print('[END] ' + json.dumps({
+    "task_id": task_id,
+    "score": score,
+    "total_reward": ep.get("total_reward", 0.0),
+    "steps": ep.get("steps", 0),
+    "success": success
+}), flush=True)
 
         all_scores.append(score)
 

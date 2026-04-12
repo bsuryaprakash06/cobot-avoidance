@@ -1,5 +1,6 @@
 name: industrial_robot_arm_collision_avoidance
 version: "1.0.0"
+app: server.app:app
 description: >
   A collaborative robot arm (cobot) operates on a shared factory floor alongside
   a moving obstacle arm. The cobot's controller must read the obstacle's broadcasted
@@ -105,6 +106,7 @@ reward:
 
 tasks:
   - id: task_1_zero_collision
+    grader: graders.easy:EasyGrader
     name: "Zero-Collision Operation"
     difficulty: easy
     max_steps: 100
@@ -115,6 +117,7 @@ tasks:
       Reflects ISO 10218 requirement: zero unplanned contacts in shared cells.
 
   - id: task_2_predictive_replan
+    grader: graders.medium:MediumGrader
     name: "Predictive Path Replanning"
     difficulty: medium
     max_steps: 100
@@ -126,6 +129,7 @@ tasks:
       Models ISO 15066 speed-and-separation monitoring.
 
   - id: task_3_halt_dispatch
+    grader: graders.hard:HardGrader
     name: "Collision-Free Halt Dispatch"
     difficulty: hard
     max_steps: 100

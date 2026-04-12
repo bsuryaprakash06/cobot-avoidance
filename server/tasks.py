@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import ActionInput, TaskInfo, TaskResult
 from server.robot_arm_environment import CollisionAvoidanceEnv, ray_distance
-from graders.easy import EasyGrader
-from graders.medium import MediumGrader
-from graders.hard import HardGrader
+from server.graders.easy import EasyGrader
+from server.graders.medium import MediumGrader
+from server.graders.hard import HardGrader
 
 
 TASKS: list[TaskInfo] = [

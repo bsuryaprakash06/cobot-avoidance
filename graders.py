@@ -1,16 +1,33 @@
-"""
-graders.py — Root-level re-export for OpenEnv judge.
-"""
-import sys
-import os
+from typing import Tuple
 
-_server_path = os.path.join(os.path.dirname(__file__), "server")
-if _server_path not in sys.path:
-    sys.path.insert(0, _server_path)
+def grade_zero_collision(env, *args, **kwargs) -> float:
+    try:
+        state = env.get_state()
+        collisions = 3 - state.cobot.integrity
+        score = (state.cobot.integrity / 3.0) * (state.step / 100.0)
+        return max(0.01, min(0.99, float(round(score, 2))))
+    except Exception:
+        return 0.01
 
-try:
-    from server.graders import EasyGrader, MediumGrader, HardGrader
-except ImportError:
-    from graders import EasyGrader, MediumGrader, HardGrader
 
-__all__ = ["EasyGrader", "MediumGrader", "HardGrader"]
+def grade_predictive_replan(env, *args, **kwargs) -> float:
+    try:
+        state = env.get_state()
+        score = 0.5 * (state.cobot.integrity / 3.0) + 0.5 * 0.8
+        return max(0.01, min(0.99, float(round(score, 2))))
+    except Exception:
+        return 0.01
+
+
+def grade_halt_dispatch(env, *args, **kwargs) -> float:
+    try:
+        state = env.get_state()
+        damage = 3 - state.obstacle.integrity
+        score = 0.4 * (state.cobot.integrity / 3.0) + 0.6 * (damage / 3.0)
+        
+        if state.obstacle.integrity <= 0 and state.step < 80:
+            score += 0.1
+            
+        return max(0.01, min(0.99, float(round(score, 2))))
+    except Exception:
+        return 0.01

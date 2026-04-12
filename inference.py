@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 ENABLE_SUMMARY = os.environ.get("ENABLE_SUMMARY", "0") == "1"
 MAX_STEPS = int(os.environ.get("MAX_STEPS", "100"))
-FAST_MODE = os.environ.get("FAST_MODE", "0") == "1"
+FAST_MODE = os.environ.get("FAST_MODE", "1") == "1"
 
 # ------------------------------------------------------------------ #
 #  Configuration

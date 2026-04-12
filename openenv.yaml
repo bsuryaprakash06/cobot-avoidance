@@ -106,7 +106,7 @@ reward:
 
 tasks:
   - id: task_1_zero_collision
-    grader: server.graders:EasyGrader
+    grader: graders:EasyGrader
     name: "Zero-Collision Operation"
     difficulty: easy
     max_steps: 100
@@ -117,7 +117,7 @@ tasks:
       Reflects ISO 10218 requirement: zero unplanned contacts in shared cells.
 
   - id: task_2_predictive_replan
-    grader: server.graders:MediumGrader
+    grader: graders:MediumGrader
     name: "Predictive Path Replanning"
     difficulty: medium
     max_steps: 100
@@ -129,7 +129,7 @@ tasks:
       Models ISO 15066 speed-and-separation monitoring.
 
   - id: task_3_halt_dispatch
-    grader: server.graders:HardGrader
+    grader: graders:HardGrader
     name: "Collision-Free Halt Dispatch"
     difficulty: hard
     max_steps: 100

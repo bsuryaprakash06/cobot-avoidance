@@ -347,15 +347,17 @@ def main():
 
         # Ensure grade has expected keys even if the call failed
         if isinstance(grade, dict):
-            score = float(grade.get("score", 0.0))
+            raw_score = float(grade.get("score", 0.0))
+            score = max(0.001, min(0.999, raw_score))
             success = bool(grade.get("success", False))
             details = grade.get("details", {})
         else:
             # graders may return a pydantic TaskResult object
             try:
-                score = float(getattr(grade, "score", 0.0))
+                raw_score = float(getattr(grade, "score", 0.0))
             except Exception:
-                score = float(getattr(grade, "score", 0.0) if hasattr(grade, "score") else 0.0)
+                raw_score = float(getattr(grade, "score", 0.0) if hasattr(grade, "score") else 0.0)
+            score = max(0.001, min(0.999, raw_score))
             success = bool(getattr(grade, "success", False))
             details = getattr(grade, "details", {})
 

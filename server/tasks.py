@@ -162,6 +162,55 @@ def run_task_3(policy_fn=None, seed: int = 42) -> TaskResult:
 #  Heuristic baseline policies
 # ------------------------------------------------------------------ #
 
+def _policy_replan(state) -> ActionInput:
+    """Evasion-only policy: dodge threats, never send halt signals."""
+    cobot = state.cobot
+    obstacle = state.obstacle
+    trajectories = [t for t in state.incoming_trajectories if t.active]
+
+    # Check for any incoming threat
+    immediate_threat = False
+
+    if obstacle.is_broadcasting and obstacle.next_trajectory_angle is not None:
+        angle = obstacle.next_trajectory_angle
+        dx_b = math.cos(math.radians(angle))
+        dy_b = math.sin(math.radians(angle))
+        d = ray_distance(cobot.tip_x, cobot.tip_y,
+                         obstacle.x, obstacle.y, dx_b, dy_b)
+        if d < 3.0:
+            immediate_threat = True
+
+    if trajectories:
+        worst = min(trajectories, key=lambda t: ray_distance(
+            cobot.tip_x, cobot.tip_y, t.x, t.y, t.vx, t.vy))
+        d = ray_distance(cobot.tip_x, cobot.tip_y,
+                         worst.x, worst.y, worst.vx, worst.vy)
+        if d < 3.0:
+            immediate_threat = True
+
+    if not immediate_threat:
+        # Safe — hold current position
+        return ActionInput(delta_angle=0.0, send_halt=False)
+
+    # Threat detected — pick the delta_angle with the best clearance
+    def clearance(delta: float) -> float:
+        rad = math.radians(cobot.angle + delta)
+        tx = cobot.x + 3.0 * math.cos(rad)
+        ty = cobot.y + 3.0 * math.sin(rad)
+        min_d = float("inf")
+        for t in trajectories:
+            min_d = min(min_d, ray_distance(tx, ty, t.x, t.y, t.vx, t.vy))
+        if obstacle.is_broadcasting and obstacle.next_trajectory_angle is not None:
+            angle = obstacle.next_trajectory_angle
+            dx_b = math.cos(math.radians(angle))
+            dy_b = math.sin(math.radians(angle))
+            min_d = min(min_d, ray_distance(tx, ty, obstacle.x, obstacle.y, dx_b, dy_b))
+        return min_d if min_d != float("inf") else 999.0
+
+    best_delta = max([-15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0], key=clearance)
+    return ActionInput(delta_angle=best_delta, send_halt=False)
+
+
 def _policy_replan_and_halt(state) -> ActionInput:
     cobot = state.cobot
     obstacle = state.obstacle

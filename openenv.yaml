@@ -110,7 +110,7 @@ tasks:
     name: "Zero-Collision Operation"
     difficulty: easy
     max_steps: 100
-    score_range: [0.0, 1.0]
+    score_range: [0.01, 0.99]  # ← strict range
     description: >
       Operate the cobot for the full episode without any end-effector collision.
       Score = (integrity_remaining / 3) × (steps_survived / 100).
@@ -121,7 +121,7 @@ tasks:
     name: "Predictive Path Replanning"
     difficulty: medium
     max_steps: 100
-    score_range: [0.0, 1.0]
+    score_range: [0.01, 0.99]  # ← strict range
     description: >
       Survive AND demonstrate predictive replanning: clear the end-effector from
       the broadcasted trajectory zone BEFORE the obstacle launches.
@@ -133,7 +133,7 @@ tasks:
     name: "Collision-Free Halt Dispatch"
     difficulty: hard
     max_steps: 100
-    score_range: [0.0, 1.0]
+    score_range: [0.01, 0.99]  # ← strict range
     description: >
       Avoid all collisions AND reduce obstacle arm to 0 operational cycles via
       halt signals. Score = 40% integrity + 60% obstacle damage fraction.

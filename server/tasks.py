@@ -153,7 +153,7 @@ def run_task_3(policy_fn=None, seed: int = 42) -> TaskResult:
             "obstacle_cycles_reduced": damage,
             "halt_signals_sent": state.cobot.halt_signals_sent,
             "halt_signals_effective": state.cobot.halt_signals_effective,
-            "accuracy": round(state.cobot.halt_signals_effective / max(1, state.cobot.halt_signals_sent), 4),
+            "accuracy": max(0.001, min(0.999, round(state.cobot.halt_signals_effective / max(1, state.cobot.halt_signals_sent), 4))),
         },
     )
 

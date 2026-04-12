@@ -282,13 +282,11 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
         return {"steps": 0, "total_reward": 0.0}
 
     # Emit structured log line prefixed with [START] followed by the JSON payload
-    print('[START] ' + json.dumps({
-        "task_id": task_id,
-        "episode": episode,
-    }), flush=True)
+    print(f"[START] task={task_id} env=cobot-avoidance model={MODEL_NAME}", flush=True)
 
     total_reward = 0.0
     steps = 0
+    episode_rewards = []
 
     for step_num in range(1, max_steps + 1):
         action = get_llm_action(state)
@@ -299,25 +297,21 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
             break
 
         reward = result.get("reward", 0.0)
+        episode_rewards.append(reward)
         total_reward += reward
         state = result.get("state", state)
         done = result.get("done", False)
         steps = step_num
 
-        # Emit structured log line prefixed with [STEP] followed by the JSON payload
-        print('[STEP] ' + json.dumps({
-            "step": step_num,
-            "action": action,
-            "reward": round(reward, 4),
-            "total_reward": round(total_reward, 4), 
-            "done": done,
-            "events": result.get("info", {}).get("events", []),
-        }), flush=True)
+        # Emit structured log line prefixed with [STEP]
+        action_str = json.dumps(action, separators=(',', ':'))
+        is_done = str(done).lower()
+        print(f"[STEP] step={step_num} action={action_str} reward={reward:.2f} done={is_done} error=null", flush=True)
 
         if done:
             break
 
-    return {"steps": steps, "total_reward": round(total_reward, 4)}
+    return {"steps": steps, "total_reward": round(total_reward, 4), "rewards": episode_rewards}
 
 # ------------------------------------------------------------------ #
 #  Main
@@ -361,24 +355,19 @@ def main():
             success = bool(getattr(grade, "success", False))
             details = getattr(grade, "details", {})
 
-        print('[END] ' + json.dumps({
-            "task_id": task_id,
-            "score": score,
-            "total_reward": ep.get("total_reward", 0.0),
-            "steps": ep.get("steps", 0),
-            "success": success,
-            "details": details,
-        }), flush=True)
+        is_success = str(success).lower()
+        steps_val = ep.get("steps", 0)
+        rewards_arr = ep.get("rewards", [])
+        rewards_str = ",".join(f"{r:.2f}" for r in rewards_arr)
+        print(f"[END] success={is_success} steps={steps_val} score={score:.3f} rewards={rewards_str} → Avg score '{task_id}': {score:.4f}", flush=True)
 
         all_scores.append(score)
 
-    mean_score = round(sum(all_scores) / len(all_scores), 4)
-
-    if ENABLE_SUMMARY:
-        print('[SUMMARY] ' + json.dumps({
-            "mean_score": mean_score,
-            "task_scores": dict(zip(task_ids, all_scores))
-        }), flush=True)
+    print("===== FINAL SCORES =====", flush=True)
+    for t_id, s in zip(task_ids, all_scores):
+        print(f"{t_id}: {s:.4f}", flush=True)
+    mean_score = sum(all_scores) / len(all_scores) if all_scores else 0.0
+    print(f"Average: {mean_score:.4f}", flush=True)
 
 
 if __name__ == "__main__":

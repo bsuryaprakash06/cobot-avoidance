@@ -4,7 +4,7 @@ class EasyGrader:
             state = env.get_state()
             collisions = 3 - state.cobot.integrity
             score = (state.cobot.integrity / 3.0) * (state.step / 100.0)
-            return max(0.01, min(0.99, round(score, 4)))
+            return max(0.001, min(0.999, float(round(score, 4))))
         except Exception:
             return 0.5
 
@@ -14,7 +14,7 @@ class MediumGrader:
         try:
             state = env.get_state()
             score = 0.5 * (state.cobot.integrity / 3.0) + 0.5 * 0.8
-            return max(0.01, min(0.99, round(score, 4)))
+            return max(0.001, min(0.999, float(round(score, 4))))
         except Exception:
             return 0.5
 
@@ -30,6 +30,6 @@ class HardGrader:
             if state.obstacle.integrity <= 0 and state.step < 80:
                 score += 0.1
 
-            return max(0.01, min(0.99, round(score, 4)))
+            return max(0.001, min(0.999, float(round(score, 4))))
         except Exception:
             return 0.5

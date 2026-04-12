@@ -93,7 +93,7 @@ def env_run_task(task_id: str, seed: int = 42) -> dict:
         r.raise_for_status()
         return r.json()
     except Exception as e:
-        return {"task_id": task_id, "score": 0.0, "success": False, "details": {"error": str(e)}}
+        return {"task_id": task_id, "score": 0.001, "success": False, "details": {"error": str(e)}}
 
 # ------------------------------------------------------------------ #
 #  LLM action generation
@@ -307,8 +307,6 @@ def run_episode(task_id: str, episode: int, seed: int, max_steps: int = 100) -> 
         steps = step_num
 
         # Emit structured log line prefixed with [STEP]
-        action_str = json.dumps(action, separators=(',', ':'))
-        is_done = str(done).lower()
         print('[STEP] ' + json.dumps({
     "step": step_num,
     "action": action,

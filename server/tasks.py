@@ -139,7 +139,7 @@ def run_task_3(policy_fn=None, seed: int = 42) -> TaskResult:
     damage = 3 - state.obstacle.integrity
     score = round(0.4 * max(0.0, state.cobot.integrity / 3.0) + 0.6 * (damage / 3.0), 4)
     if state.obstacle.integrity <= 0 and steps < 80:
-        score = min(1.0, score + 0.1)
+        score = min(0.999, score + 0.1)
 
     return TaskResult(
         task_id="task_3_halt_dispatch",

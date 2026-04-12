@@ -2,13 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install server dependencies
 COPY server/requirements.txt ./server/requirements.txt
 RUN pip install --no-cache-dir -r server/requirements.txt
 
-# Copy full project (models.py at root, server/ package)
 COPY models.py .
 COPY server/ ./server/
+COPY graders.py .          
+COPY openenv.yaml .        
 
 EXPOSE 7860
 

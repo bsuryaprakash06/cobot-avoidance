@@ -2,8 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY server/requirements.txt ./server/requirements.txt
-RUN pip install --no-cache-dir -r server/requirements.txt
+# Install dependencies from root requirements manifest for optimal layer caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY models.py .
 COPY server/ ./server/

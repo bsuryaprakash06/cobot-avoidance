@@ -269,11 +269,3 @@ docker run -p 7860:7860 cobot-avoidance-env
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for complete details.
-
-## Author
-
-**Surya Prakash B**  
-AI & Systems Automation Engineer  
-Email: [suryaprakashb2006@gmail.com](mailto:suryaprakashb2006@gmail.com)  
-GitHub: [@bsuryaprakash06](https://github.com/bsuryaprakash06)  
-LinkedIn: [Surya Prakash B](https://www.linkedin.com/in/bsuryaprakash06)

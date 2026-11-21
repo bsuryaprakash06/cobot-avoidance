@@ -23,6 +23,11 @@ class CobotArm(BaseModel):
     halt_signals_sent: int = Field(..., description="Total halt signals dispatched this episode")
     halt_signals_effective: int = Field(..., description="Halt signals that successfully stopped an obstacle trajectory")
 
+    @property
+    def is_operational(self) -> bool:
+        """True if the manipulator maintains positive integrity points."""
+        return self.integrity > 0
+
 
 class ObstacleArm(BaseModel):
     x: float = Field(..., description="Obstacle arm base X position")
@@ -35,6 +40,11 @@ class ObstacleArm(BaseModel):
     )
     is_broadcasting: bool = Field(..., description="True when obstacle arm is broadcasting its next trajectory")
     steps_until_launch: int = Field(..., description="Steps until obstacle arm launches next trajectory")
+
+    @property
+    def is_active(self) -> bool:
+        """True if the obstacle arm maintains operational integrity remaining."""
+        return self.integrity > 0
 
 
 class TrajectoryProjectile(BaseModel):

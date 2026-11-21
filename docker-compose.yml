@@ -1,0 +1,11 @@
+services:
+  cobot-env:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cobot-avoidance-env
+    ports:
+      - "7860:7860"
+    environment:
+      - PORT=7860
+    restart: unless-stopped

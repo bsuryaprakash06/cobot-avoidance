@@ -44,6 +44,9 @@ ENV_BASE_URL = os.environ.get("ENV_BASE_URL", "http://localhost:7860")
 
 client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
 
+if not API_KEY and __name__ == "__main__":
+    print("[WARN] Neither API_KEY nor HF_TOKEN is set. Provide credentials via environment variables for live API calls.")
+
 # ------------------------------------------------------------------ #
 #  Environment HTTP helpers
 # ------------------------------------------------------------------ #

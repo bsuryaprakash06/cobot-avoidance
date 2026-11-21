@@ -23,6 +23,9 @@ class CollisionAvoidanceClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
+    def __repr__(self) -> str:
+        return f"CollisionAvoidanceClient(base_url='{self.base_url}', timeout={self.timeout})"
+
     # ------------------------------------------------------------------ #
     #  OpenEnv core
     # ------------------------------------------------------------------ #

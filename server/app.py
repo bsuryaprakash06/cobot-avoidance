@@ -93,7 +93,10 @@ def run_task(task_id: str, seed: int = 42):
         "task_3_halt_dispatch": run_task_3,
     }
     if task_id not in runners:
-        raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found.")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task '{task_id}' not found. Available tasks: {list(runners.keys())}"
+        )
     return runners[task_id](policy_fn=None, seed=seed)
 
 
@@ -140,7 +143,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/health", tags=["Health"])
 def health():
-    return {"status": "ok", "environment": "industrial_robot_arm_collision_avoidance"}
+    return {
+        "status": "ok",
+        "environment": "industrial_robot_arm_collision_avoidance",
+        "version": "1.0.0"
+    }
 
 
 @app.get("/", tags=["Health"])
